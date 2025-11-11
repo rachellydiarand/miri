@@ -1,3 +1,19 @@
 body {
 	font-family: monospace;
 }
+
+.indented {
+	margin: 4px 16px;
+	padding: 6px;
+}
+
+.indentedDark {
+	margin: 4px 16px;
+	padding: 6px;
+	background-color: #eee;
+}
+
+.darkMode {
+	background-color: black;
+	color: green;
+}
