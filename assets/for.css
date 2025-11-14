@@ -17,3 +17,11 @@ body {
 	background-color: black;
 	color: green;
 }
+
+.pink {
+	color: #ff5555 !important;
+}
+
+.babyBlue {
+	color: #3399ff !important;
+}
