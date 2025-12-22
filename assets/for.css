@@ -25,3 +25,7 @@ body {
 .babyBlue {
 	color: #3399ff !important;
 }
+
+.highlight {
+	background-color: yellow !important;
+}
