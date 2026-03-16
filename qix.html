@@ -1,0 +1,61 @@
+<html>
+<head>
+	<title>Ms Rand | QIX</title>
+	<!-- game code at the bottom of this file -->
+	<!-- this is a clone done by rachel lydia rand, started on 2026-03-16, at 3:29am -->
+</head>
+<body>
+
+	<canvas id="qixCanvas" height="600" width="800" style="background-color: black;"></canvas>
+	
+	<script type="text/javascript">
+	
+		// properties
+		var frameRate = 10;// per second
+		var qixStylusPenColor = "#efefef";
+		var qixCanvas = document.getElementById("qixCanvas");
+		var qixContext = qixCanvas.getContext("2d");
+		
+		
+		// drawing methods
+		function clearCanvas(canvas, context) {
+			canvas.clearRect(0, 0, context.width, context.height);
+		}
+		
+		function drawLine(ax, ay, bx, by, context, color) {
+			context.strokeStyle = color;
+			context.moveTo(ax, ay);
+			context.lineTo(bx, by);
+			context.stroke();
+		}
+		
+		
+		
+		// game logic
+		function lineTest() {
+			var ax = Math.random() * qixCanvas.width;
+			var ay = Math.random() * qixCanvas.height;
+			var bx = Math.random() * qixCanvas.width;
+			var by = Math.random() * qixCanvas.height;
+			drawLine(ax, ay, bx, by, qixContext, qixStylusPenColor);
+		}
+		
+		
+		// listeners
+		function dokeydown(key) {
+			key = String(key);
+			key = key.toLowerCase();
+			//alert(key);
+			lineTest();
+			
+		}
+		
+		
+		// entry point
+		document.addEventListener("keydown", (event) => {
+			dokeydown(event.code);
+		});
+	
+	</script>
+</body>
+</html>
