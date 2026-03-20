@@ -12,14 +12,18 @@
 	
 		// properties
 		var frameRate = 10;// per second
-		var qixStylusPenColor = "#efefef";
+		var qix = null;// the qix game object will be stored here, and we can call methods on it
 		var qixCanvas = document.getElementById("qixCanvas");
 		var qixContext = qixCanvas.getContext("2d");
+		var gameRunning = false;
 		
 		
 		// drawing methods
-		function clearCanvas(canvas, context) {
-			canvas.clearRect(0, 0, context.width, context.height);
+		function clearCanvas(canvas, context, color) {
+			context.clearRect(0, 0, canvas.width, canvas.height);
+			//context.fillStyle = '#000000';
+			//context.fillRect(0, 0, canvas.width, canvas.height);
+			context.beginPath();
 		}
 		
 		function drawLine(ax, ay, bx, by, context, color) {
@@ -28,8 +32,6 @@
 			context.lineTo(bx, by);
 			context.stroke();
 		}
-		
-		
 		
 		// game logic
 		function lineTest() {
@@ -40,20 +42,223 @@
 			drawLine(ax, ay, bx, by, qixContext, qixStylusPenColor);
 		}
 		
+		function makeGame(canvas, ctx) {
+			// making the game object oriented
+			// this way we can keep our namespace
+			// so that other stuff on the screen
+			// can use the draw line and clearCanvas methods
+			// I hate leaving these methods out of the main object
+			// but there is educational value in it
+			// so I'll put those methods in comments here:
+			/*
+				// drawing methods
+				function clearCanvas(canvas, context) {
+					canvas.clearRect(0, 0, context.width, context.height);
+				}
+				
+				function drawLine(ax, ay, bx, by, context, color) {
+					context.strokeStyle = color;
+					context.moveTo(ax, ay);
+					context.lineTo(bx, by);
+					context.stroke();
+				}
+			*/
+			var obj = new Object();
+			obj.frameRate = 30;
+			obj.canvas = canvas;
+			obj.ctx = ctx;
+			obj.stage = new Object();
+			obj.stage.width = canvas.width;
+			obj.stage.height = canvas.height;
+			obj.playing = false;
+			obj.enterFrameInterval = 0;
+			
+			// methods linking to external methods
+			obj.drawLine = function(ax, ay, bx, by, color) {
+				drawLine(ax, ay, bx, by, obj.ctx, color);
+			}
+			
+			// dimensions
+			obj.stage.padding = 20;
+			
+			// cursor, the players piece
+			obj.cursor = new Object();
+			obj.cursor.speed = 10;
+			obj.cursor.x = 0;
+			obj.cursor.y = 0;
+			obj.cursor.width = 10;
+			obj.cursor.height = 10;
+			obj.cursor.style = "#efefef";
+			
+			// key states (the keyboard moves the player)
+			obj.keyThatIsDown = "";
+			
+			// cursor movements			
+			obj.moveLeft = function() {
+				var xp = obj.cursor.x - obj.cursor.speed;
+				if(xp < obj.stage.padding) {
+					xp = obj.stage.padding;
+				}
+				obj.cursor.x = xp;
+			};
+			obj.moveRight = function() {
+				var xp = obj.cursor.x + obj.cursor.speed;
+				if(xp > obj.stage.width - obj.stage.padding) {
+					xp = obj.stage.width - obj.stage.padding;
+				}
+				obj.cursor.x = xp;
+			};
+			obj.moveUp = function() {
+				var yp = obj.cursor.y - obj.cursor.speed;
+				if(yp < obj.stage.padding) {
+					yp = obj.stage.padding;
+				}
+				obj.cursor.y = yp;
+			};
+			obj.moveDown = function() {
+				var yp = obj.cursor.y + obj.cursor.speed;
+				if(yp > obj.stage.height - obj.stage.padding) {
+					yp = obj.stage.height - obj.stage.padding;
+				}
+				obj.cursor.y = yp;
+			};
+			
+			
+			obj.enterFrameCount = 0;
+			
+			obj.EnterFrame = function() {
+				// throw away variables
+				obj.enterFrameCount++;
+				
+				// handle cursor movements
+				if(obj.keyThatIsDown == "left") {
+					obj.moveLeft();
+				}
+				else if(obj.keyThatIsDown == "right") {
+					obj.moveRight();
+				}
+				else if(obj.keyThatIsDown == "up") {
+					obj.moveUp();
+				}
+				else if(obj.keyThatIsDown == "down") {
+					obj.moveDown();
+				}
+				
+				var x, y, w, h, w2, h2;
+				
+				if(!obj.playing || obj.keyThatIsDown != "") {
+					obj.playing = true;
+					console.log("qix enter frame: " + obj.enterFrameCount);
+					// refresh
+					clearCanvas(obj.canvas, obj.ctx);
+					
+					//if(obj.enterFrameCount > 40) return;
+					
+					// draw line around playing area
+					p = obj.stage.padding;
+					w = obj.stage.width;
+					h = obj.stage.height;
+					obj.drawLine(p, p, w - p, p, obj.cursor.style);
+					obj.drawLine(w - p, p, w - p, h - p, obj.cursor.style);
+					obj.drawLine(w - p, h - p, p, h - p, obj.cursor.style);
+					obj.drawLine(p, h - p, p, p, obj.cursor.style);
+					
+					// draw cursor
+					// starting left (180 degrees standard position)
+					x = obj.cursor.x;
+					y = obj.cursor.y;
+					w = obj.cursor.width;
+					w2 = Math.round(w / 2);
+					h = obj.cursor.height;
+					h2 = Math.round(h / 2);				
+					obj.drawLine(x - w2, y, x, y - h2, obj.cursor.style);
+					obj.drawLine(x, y - h2, x + w2, y, obj.cursor.style);
+					obj.drawLine(x + w2, y, x, y + h2, obj.cursor.style);
+					obj.drawLine(x, y + h2, x - w2, y, obj.cursor.style);
+				}
+				
+			}
+			
+			obj.start = function() {
+				obj.cursor.x = Math.round(obj.stage.width / 2);
+				obj.cursor.y = Math.round(obj.stage.height - obj.stage.padding);
+				obj.playing = false; // will draw the first stage and place the cursor				
+				// start the frame listener
+				clearInterval(obj.enterFrameInterval);
+				obj.enterFrameInterval = setInterval(obj.EnterFrame, obj.frameRate);
+			}
+			
+			obj.keyDown = function(key) {
+				//alert(key);
+				if(key == "arrowleft" || key == "keya") {
+					obj.keyThatIsDown = "left";
+				}
+				else if(key == "arrowright" || key == "keyd") {
+					obj.keyThatIsDown = "right";
+				}
+				else if(key == "arrowup" || key == "keyw") {
+					obj.keyThatIsDown = "up";
+				}
+				else if(key == "arrowdown" || key == "keys") {
+					obj.keyThatIsDown = "down";
+				}
+			}
+			obj.keyUp = function(key) {
+				//alert(key);
+				if(key == "arrowleft" || key == "keya") {
+					if(obj.keyThatIsDown == "left") {
+						obj.keyThatIsDown = "";
+					}
+				}
+				else if(key == "arrowright" || key == "keyd") {
+					if(obj.keyThatIsDown == "right") {
+						obj.keyThatIsDown = "";
+					}
+				}
+				else if(key == "arrowup" || key == "keyw") {
+					if(obj.keyThatIsDown == "up") {
+						obj.keyThatIsDown = "";
+					}
+				}
+				else if(key == "arrowdown" || key == "keys") {
+					if(obj.keyThatIsDown == "down") {
+						obj.keyThatIsDown = "";
+					}
+				}
+			}
+			
+			// return the game code object
+			// for persistence and ability to call methods like
+			// play() and stop() on it
+			return obj;
+		}
+		
 		
 		// listeners
 		function dokeydown(key) {
 			key = String(key);
 			key = key.toLowerCase();
 			//alert(key);
-			lineTest();
-			
+			qix.keyDown(key);
 		}
+		function dokeyup(key) {
+			key = String(key);
+			key = key.toLowerCase();
+			//alert(key);
+			qix.keyUp(key);
+		}
+		
+		// instantiate qix!
+		qix = makeGame(qixCanvas, qixContext);
+		qix.start();
 		
 		
 		// entry point
 		document.addEventListener("keydown", (event) => {
 			dokeydown(event.code);
+		});
+		document.addEventListener("keyup", (event) => {
+			dokeyup(event.code);
 		});
 	
 	</script>
