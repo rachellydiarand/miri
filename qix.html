@@ -42,6 +42,148 @@
 			drawLine(ax, ay, bx, by, qixContext, qixStylusPenColor);
 		}
 		
+		// Rachel Lydia Rand's linear collision detection
+		function buildCollisionDetectionObject() {
+			var returnObj = new Object();
+			returnObj.count = 0;
+			returnObj.getM = function(obj1, obj2)
+			{			
+				return(((obj1.y) - (obj2.y))/(obj1.x - obj2.x));
+			}
+			returnObj.getB = function(obj1, obj2)
+			{
+				return((obj1.y) - (returnObj.getM(obj1,obj2) * obj1.x));
+			}
+			returnObj.isIntercepting = function(A, B, C, D)
+			{
+				var	x1 = (returnObj.getB(C,D) - returnObj.getB(A,B)) / (returnObj.getM(A,B) - returnObj.getM(C,D));
+				var y1;
+				var y2;
+				
+				if (isNaN(x1))
+				{
+					if (A.x == B.x)
+					{									
+						x1 = A.x;
+						y1 = (returnObj.getM(C,D) * x1) + returnObj.getB(C,D);					
+					}
+					else
+					{
+						x1 = C.x;
+						y1 = (returnObj.getM(A,B) * x1) + returnObj.getB(A,B);
+					}
+				}
+				else
+				{
+					y1 = (returnObj.getM(A,B) * x1) + returnObj.getB(A,B);
+				}
+				
+				var xInBounds = false;
+				var zeroRiseSensitivity = .5;
+				if(A.x < B.x){
+					if(x1 >= A.x && x1 <= B.x){
+						xInBounds = true;
+					}
+				}
+				else{
+					if(x1 >= B.x && x1 <= A.x){
+						xInBounds = true;
+					}
+				}
+				if(A.x == B.x){
+					if (x1 > A.x - zeroRiseSensitivity && x1 < A.x + zeroRiseSensitivity)
+					{
+						//xInBounds = true;
+					}
+				}			
+					
+				
+				var yInBounds = false;
+				if(A.y < B.y){
+					if(y1 >= A.y && y1 <= B.y){
+						yInBounds = true;
+					}
+				}
+				else{
+					if(y1 >= B.y && y1 <= A.y){
+						yInBounds = true;
+					}
+				}
+				if(A.y == B.y){
+					if(y1 > A.y - zeroRiseSensitivity && y1 < A.y + zeroRiseSensitivity){
+						//yInBounds = true;
+					}
+				}		
+				
+				var xInBounds2 = false;
+				if(C.x < D.x){
+					if(x1 >= C.x && x1 <= D.x){
+						xInBounds2 = true;
+					}
+				}
+				else{
+					if(x1 >= D.x && x1 <= C.x){
+						xInBounds2 = true;
+					}
+				}
+				if(C.x > D.x - zeroRiseSensitivity && C.x < D.x + zeroRiseSensitivity){
+					if(x1 > C.x - zeroRiseSensitivity && x1 < C.x + zeroRiseSensitivity){
+						xInBounds2 = true;
+					}
+				}	
+				
+				var yInBounds2 = false;
+				if(C.y < D.y){
+					if(y1 >= C.y && y1 <= D.y){
+						yInBounds2 = true;
+					}
+				}
+				else{
+					if(y1 >= D.y && y1 <= C.y){
+						yInBounds2 = true;
+					}
+				}
+				if(C.y > D.y - zeroRiseSensitivity && C.y < D.y + zeroRiseSensitivity){
+					//count++
+					//trace("c = d",count);
+					if(y1 > C.y - zeroRiseSensitivity && y1 < C.y + zeroRiseSensitivity){
+						yInBounds2 = true;
+					}
+				}	
+								
+				if(x1 == Infinity || x1 == -Infinity || y1 == Infinity || y1 == -Infinity || isNaN(x1) || isNaN(y1)){
+					//alert("infinity");
+					return false;
+					//return("Infinity");
+						
+				}
+				
+				if(xInBounds && yInBounds && xInBounds2 && yInBounds2){
+					returnObj.count++;
+					//trace("inbounds ",count);
+					var obj = new Object();
+					obj.x = x1;
+					obj.y = y1;
+					return(obj);
+				}
+				return(false);
+			}
+
+			returnObj.findC = function(y1,x1){
+				return(Math.sqrt(y1 * y1 + x1 * x1));
+			}
+
+			returnObj.inRange = function(A, B, C, D)
+			{
+				if (Math.min(C.x, D.x) > Math.max(A.x, B.x) || Math.max(C.x, D.x) < Math.min(A.x, B.x) || Math.min(C.y, D.y) > Math.max(A.y, B.y) || Math.max(C.y, D.y) < Math.min(A.y, B.y)) return false;
+				return true;
+			}
+			
+			return returnObj;
+		}
+		
+		var collisionDetection = buildCollisionDetectionObject();
+		
 		function makeGame(canvas, ctx) {
 			// making the game object oriented
 			// this way we can keep our namespace
@@ -73,13 +215,21 @@
 			obj.playing = false;
 			obj.enterFrameInterval = 0;
 			
+			// stash the lines for collision detection
+			obj.lines = new Array();
+			
 			// methods linking to external methods
 			obj.drawLine = function(ax, ay, bx, by, color) {
 				drawLine(ax, ay, bx, by, obj.ctx, color);
 			}
+			obj.drawCursorLine = function(ax, ay, bx, by, color) {
+				drawLine(ax, ay, bx, by, obj.ctx, color);				
+			}
 			
 			// dimensions
 			obj.stage.padding = 20;
+			
+			
 			
 			// cursor, the players piece
 			obj.cursor = new Object();
@@ -93,34 +243,68 @@
 			// key states (the keyboard moves the player)
 			obj.keyThatIsDown = "";
 			
-			// cursor movements			
+			// cursor movements
+			obj.moveCursor = function (xp, yp) {
+				var ax, ay, bx, by;
+				var A, B, C, D;
+				ax = obj.cursor.x;
+				ay = obj.cursor.y;
+				bx = xp;
+				by = yp;
+				A = new Object();
+				A.x = ax;
+				A.y = ay;
+				B = new Object();
+				B.x = bx;
+				B.y = by;
+				// insert collision detection here
+				var hit = false;
+				for(var a = 0; a < obj.lines.length; a++) {
+					C = obj.lines[a].A;
+					D = obj.lines[a].B;
+					if(collisionDetection.isIntercepting(A, B, C, D)) {
+						// not going to allow this move for now
+						// we could make a partial move here
+						// just exit function for now
+						//return;
+					}
+				}
+				
+				var newLineObj = new Object();
+				newLineObj.A = A;
+				newLineObj.B = B;
+				obj.lines.push(newLineObj);
+				
+				obj.cursor.x = xp;
+				obj.cursor.y = yp;
+			}
 			obj.moveLeft = function() {
 				var xp = obj.cursor.x - obj.cursor.speed;
 				if(xp < obj.stage.padding) {
 					xp = obj.stage.padding;
 				}
-				obj.cursor.x = xp;
+				obj.moveCursor(xp, obj.cursor.y);
 			};
 			obj.moveRight = function() {
 				var xp = obj.cursor.x + obj.cursor.speed;
 				if(xp > obj.stage.width - obj.stage.padding) {
 					xp = obj.stage.width - obj.stage.padding;
 				}
-				obj.cursor.x = xp;
+				obj.moveCursor(xp, obj.cursor.y);
 			};
 			obj.moveUp = function() {
 				var yp = obj.cursor.y - obj.cursor.speed;
 				if(yp < obj.stage.padding) {
 					yp = obj.stage.padding;
 				}
-				obj.cursor.y = yp;
+				obj.moveCursor(obj.cursor.x, yp);
 			};
 			obj.moveDown = function() {
 				var yp = obj.cursor.y + obj.cursor.speed;
 				if(yp > obj.stage.height - obj.stage.padding) {
 					yp = obj.stage.height - obj.stage.padding;
 				}
-				obj.cursor.y = yp;
+				obj.moveCursor(obj.cursor.x, yp);
 			};
 			
 			
@@ -145,6 +329,8 @@
 				}
 				
 				var x, y, w, h, w2, h2;
+				var ax, ay, bx, by;
+				var line;
 				
 				if(!obj.playing || obj.keyThatIsDown != "") {
 					obj.playing = true;
@@ -170,11 +356,17 @@
 					w = obj.cursor.width;
 					w2 = Math.round(w / 2);
 					h = obj.cursor.height;
-					h2 = Math.round(h / 2);				
-					obj.drawLine(x - w2, y, x, y - h2, obj.cursor.style);
-					obj.drawLine(x, y - h2, x + w2, y, obj.cursor.style);
-					obj.drawLine(x + w2, y, x, y + h2, obj.cursor.style);
-					obj.drawLine(x, y + h2, x - w2, y, obj.cursor.style);
+					h2 = Math.round(h / 2);										
+					obj.drawCursorLine(x - w2, y, x, y - w2, obj.cursor.style);				
+					obj.drawCursorLine(x, y - h2, x + w2, y, obj.cursor.style);
+					obj.drawCursorLine(x + w2, y, x, y + h2, obj.cursor.style);
+					obj.drawCursorLine(x, y + h2, x - w2, y, obj.cursor.style);
+					
+					// draw cursor lines
+					for(var a = 0; a < obj.lines.length; a++) {
+						line = obj.lines[a];
+						obj.drawLine(line.A.x, line.A.y, line.B.x, line.B.y, obj.cursor.style);
+					}
 				}
 				
 			}
