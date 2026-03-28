@@ -242,6 +242,7 @@
 			
 			// key states (the keyboard moves the player)
 			obj.keyThatIsDown = "";
+			obj.lastKeyThatWasDown = "";// so that we can not got 180 degrees of last move
 			
 			// cursor movements
 			obj.moveCursor = function (xp, yp) {
@@ -257,17 +258,83 @@
 				B = new Object();
 				B.x = bx;
 				B.y = by;
+				
+				// determine move direction
+				var moveDirection = "horizontal";
+				if(A.x == B.x) moveDirection = "vertical";
+				
 				// insert collision detection here
 				var hit = false;
 				for(var a = 0; a < obj.lines.length; a++) {
 					C = obj.lines[a].A;
 					D = obj.lines[a].B;
-					if(collisionDetection.isIntercepting(A, B, C, D)) {
+					
+					if(!collisionDetection.inRange(A, B, C, D)) {
+						//continue;
+					}
+					
+					//alert(C.x + ", " + C.y + ", " + D.x + ", " + D.y);
+					
+					if(moveDirection == "horizontal") {
+						// horizontal
+						if(C.x != D.x) {
+							// we are moving in the same direction
+							// as the line we are testing against
+							// let's assign no hit for now
+							//alert("hit");
+						}
+						else {
+							if(C.y <= A.y && D.y > A.y)
+							{
+								hit = true;
+								break;
+							}
+							if(C.y >= A.y && D.y < A.y) {
+								hit = true;
+								break;
+							}
+						}
+					}
+					else {
+						// vertical
+						
+						if(C.x == D.x) {
+							// we are moving in the same direction
+							// as the line we are testing against
+							// let's assign no hit for now
+						}
+						else {
+							if(C.x <= A.x && D.x > A.x) {
+								hit = true;
+								break;
+							}
+							if(C.x < A.x && D.x >= A.x) {
+								hit = true;
+								break;
+							}
+							if(C.x >= A.x && D.x < A.x) {
+								hit = true;
+								break;
+							}
+							if(C.x > A.x && D.x <= A.x) {
+								hit = true;
+								break;
+							}
+						}
+					}
+					// determine
+					//if(collisionDetection.isIntercepting(A, B, C, D)) {
 						// not going to allow this move for now
 						// we could make a partial move here
 						// just exit function for now
 						//return;
-					}
+					//}
+				}
+				
+				if(false && hit) {
+					// we collided with another line
+					//alert("hit");
+					return;
 				}
 				
 				var newLineObj = new Object();
@@ -380,41 +447,99 @@
 				obj.enterFrameInterval = setInterval(obj.EnterFrame, obj.frameRate);
 			}
 			
+			obj.isValidMove = function(direction) {
+				var lastDirection = obj.keyThatIsDown;
+				if(lastDirection == "") {
+					lastDirection = obj.lastKeyThatWasDown;
+				}
+				
+				// if we are on the border, we want to return true
+				if(direction == "left" || direction == "right") {
+					if(obj.cursor.y == obj.stage.padding || obj.cursor.y == (obj.stage.height - obj.stage.padding)) return true;						
+				}
+				if(direction == "up" || direction == "down") {
+					if(obj.cursor.x == obj.stage.padding || obj.cursor.x == (obj.stage.width - obj.stage.padding)) return true;						
+				}
+				
+				// else, make sure we can't do a 180 turn!
+				
+				if(direction == "left"  && lastDirection == "right") return false;
+				if(direction == "right"  && lastDirection == "left") return false;
+				if(direction == "up"  && lastDirection == "down") return false;
+				if(direction == "down"  && lastDirection == "up") return false;
+				
+				return true;				
+			}
+			
 			obj.keyDown = function(key) {
 				//alert(key);
 				if(key == "arrowleft" || key == "keya") {
-					obj.keyThatIsDown = "left";
+					if(obj.isValidMove("left")) {
+						obj.keyThatIsDown = "left";
+						obj.lastKeyThatWasDown = "left";
+					}
+					else {
+						obj.lastKeyThatWasDown = obj.keyThatIsDown;
+						obj.keyThatIsDown = "";
+					}
 				}
 				else if(key == "arrowright" || key == "keyd") {
-					obj.keyThatIsDown = "right";
+					if(obj.isValidMove("right")) {
+						obj.keyThatIsDown = "right";
+						obj.lastKeyThatWasDown = "right";
+					}
+					else {
+						obj.lastKeyThatWasDown = obj.keyThatIsDown;
+						obj.keyThatIsDown = "";
+					}
 				}
 				else if(key == "arrowup" || key == "keyw") {
-					obj.keyThatIsDown = "up";
+					if(obj.isValidMove("up")) {
+						obj.keyThatIsDown = "up";
+						obj.lastKeyThatWasDown = "up";
+					}
+					else {
+						obj.lastKeyThatWasDown = obj.keyThatIsDown;
+						obj.keyThatIsDown = "";					
+					}
 				}
 				else if(key == "arrowdown" || key == "keys") {
-					obj.keyThatIsDown = "down";
+					if(obj.isValidMove("down")) {
+						obj.keyThatIsDown = "down";
+						obj.lastKeyThatWasDown = "down";
+					}
+					else {
+						obj.lastKeyThatWasDown = obj.keyThatIsDown;
+						obj.keyThatIsDown = "";
+					
+					}
 				}
 			}
+			
 			obj.keyUp = function(key) {
 				//alert(key);
 				if(key == "arrowleft" || key == "keya") {
 					if(obj.keyThatIsDown == "left") {
 						obj.keyThatIsDown = "";
+						obj.lastKeyThatWasDown = "left";
 					}
 				}
 				else if(key == "arrowright" || key == "keyd") {
 					if(obj.keyThatIsDown == "right") {
 						obj.keyThatIsDown = "";
+						obj.lastKeyThatWasDown = "right";
 					}
 				}
 				else if(key == "arrowup" || key == "keyw") {
 					if(obj.keyThatIsDown == "up") {
 						obj.keyThatIsDown = "";
+						obj.lastKeyThatWasDown = "up";
 					}
 				}
 				else if(key == "arrowdown" || key == "keys") {
 					if(obj.keyThatIsDown == "down") {
 						obj.keyThatIsDown = "";
+						obj.lastKeyThatWasDown = "down";
 					}
 				}
 			}
