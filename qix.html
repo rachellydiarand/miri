@@ -57,10 +57,11 @@
 			}
 			returnObj.isIntercepting = function(A, B, C, D)
 			{
+				//return false;
 				var	x1 = (returnObj.getB(C,D) - returnObj.getB(A,B)) / (returnObj.getM(A,B) - returnObj.getM(C,D));
 				var y1;
 				var y2;
-				
+								
 				if (isNaN(x1))
 				{
 					if (A.x == B.x)
@@ -72,12 +73,18 @@
 					{
 						x1 = C.x;
 						y1 = (returnObj.getM(A,B) * x1) + returnObj.getB(A,B);
-					}
+					}			
+					
 				}
 				else
 				{
 					y1 = (returnObj.getM(A,B) * x1) + returnObj.getB(A,B);
+					if(isNaN(y1)) {
+						return false;
+					}
 				}
+								
+				console.log("collision detection x1: " + x1 + ", y1: " + y1);
 				
 				var xInBounds = false;
 				var zeroRiseSensitivity = .5;
@@ -153,7 +160,7 @@
 				}	
 								
 				if(x1 == Infinity || x1 == -Infinity || y1 == Infinity || y1 == -Infinity || isNaN(x1) || isNaN(y1)){
-					//alert("infinity");
+					console.log("infinity");
 					return false;
 					//return("Infinity");
 						
@@ -230,8 +237,6 @@
 			// dimensions
 			obj.stage.padding = 20;
 			
-			
-			
 			// cursor, the players piece
 			obj.cursor = new Object();
 			obj.cursor.speed = 10;
@@ -272,11 +277,11 @@
 					D = obj.lines[a].B;
 					
 					if(!collisionDetection.inRange(A, B, C, D)) {
-						//continue;
+						continue;
 					}
 					
 					//alert(C.x + ", " + C.y + ", " + D.x + ", " + D.y);
-					
+					/*
 					if(moveDirection == "horizontal") {
 						// horizontal
 						if(C.x != D.x) {
@@ -324,18 +329,35 @@
 							}
 						}
 					}
-					// determine
-					//if(collisionDetection.isIntercepting(A, B, C, D)) {
+					*/
+					// look for collisions
+					var collision = collisionDetection.isIntercepting(A, B, C, D)
+					if(collision) {
 						// not going to allow this move for now
 						// we could make a partial move here
 						// just exit function for now
 						//return;
-					//}
+						
+						// analyze the return object
+						// it stores the collision point							
+						console.log("collision detection returned a hit!");
+						console.log("Collision: " + collision.x + ", " + collision.y);
+						console.log("A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
+						console.log("C: " + C.x + ", " + C.y + ", D " + D.x + ", " + D.y);
+						
+						if(collision.x == A.x && collision.y == A.y)
+						{
+							// not a hit
+							console.log("hit ruled out, doing continue");
+							continue;
+						}
+						hit = true;
+					}
 				}
 				
-				if(false && hit) {
+				if(true && hit) {
 					// we collided with another line
-					//alert("hit");
+					console.log("We had a collision.  Skipping out of the move.")
 					return;
 				}
 				
