@@ -27,6 +27,7 @@
 		}
 		
 		function drawLine(ax, ay, bx, by, context, color) {
+			context.beginPath();
 			context.strokeStyle = color;
 			context.moveTo(ax, ay);
 			context.lineTo(bx, by);
@@ -239,6 +240,7 @@
 			obj.cursor.width = 10;
 			obj.cursor.height = 10;
 			obj.cursor.style = "#efefef";
+			obj.cursor.intersectionStyle = "#ff0000";
 			
 			// key states (the keyboard moves the player)
 			obj.keyThatIsDown = "";
@@ -340,10 +342,20 @@
 				var newLineObj = new Object();
 				newLineObj.A = A;
 				newLineObj.B = B;
-				obj.lines.push(newLineObj);
+				
+				if(obj.lines.length == 0 || obj.keyThatIsDown != obj.lastKeyThatWasDown) {
+					// we changed direction
+					obj.lines.push(newLineObj);
+				}
+				else {
+					// we did not change direction
+					// simply add on to the previous line
+					obj.lines[obj.lines.length - 1].B = newLineObj.B;
+				}				
 				
 				obj.cursor.x = xp;
 				obj.cursor.y = yp;
+				obj.lastKeyThatWasDown = obj.keyThatIsDown;
 			}
 			obj.moveLeft = function() {
 				var xp = obj.cursor.x - obj.cursor.speed;
@@ -433,6 +445,7 @@
 					for(var a = 0; a < obj.lines.length; a++) {
 						line = obj.lines[a];
 						obj.drawLine(line.A.x, line.A.y, line.B.x, line.B.y, obj.cursor.style);
+						obj.drawLine(line.A.x, line.A.y, line.A.x + 1, line.A.y - 1, obj.cursor.intersectionStyle);
 					}
 				}
 				
@@ -476,41 +489,43 @@
 				if(key == "arrowleft" || key == "keya") {
 					if(obj.isValidMove("left")) {
 						obj.keyThatIsDown = "left";
-						obj.lastKeyThatWasDown = "left";
+						// we'll set this once the first move in that direction is made
+						//obj.lastKeyThatWasDown = "left";
 					}
 					else {
-						obj.lastKeyThatWasDown = obj.keyThatIsDown;
-						obj.keyThatIsDown = "";
+						// these pockets of code were allowing movement with rapidfire (no keyup)
+						//obj.lastKeyThatWasDown = obj.keyThatIsDown;
+						//obj.keyThatIsDown = "";
 					}
 				}
 				else if(key == "arrowright" || key == "keyd") {
 					if(obj.isValidMove("right")) {
 						obj.keyThatIsDown = "right";
-						obj.lastKeyThatWasDown = "right";
+						//obj.lastKeyThatWasDown = "right";
 					}
 					else {
-						obj.lastKeyThatWasDown = obj.keyThatIsDown;
-						obj.keyThatIsDown = "";
+						//obj.lastKeyThatWasDown = obj.keyThatIsDown;
+						//obj.keyThatIsDown = "";
 					}
 				}
 				else if(key == "arrowup" || key == "keyw") {
 					if(obj.isValidMove("up")) {
 						obj.keyThatIsDown = "up";
-						obj.lastKeyThatWasDown = "up";
+						//obj.lastKeyThatWasDown = "up";
 					}
 					else {
-						obj.lastKeyThatWasDown = obj.keyThatIsDown;
-						obj.keyThatIsDown = "";					
+						//obj.lastKeyThatWasDown = obj.keyThatIsDown;
+						//obj.keyThatIsDown = "";					
 					}
 				}
 				else if(key == "arrowdown" || key == "keys") {
 					if(obj.isValidMove("down")) {
 						obj.keyThatIsDown = "down";
-						obj.lastKeyThatWasDown = "down";
+						//obj.lastKeyThatWasDown = "down";
 					}
 					else {
-						obj.lastKeyThatWasDown = obj.keyThatIsDown;
-						obj.keyThatIsDown = "";
+						//obj.lastKeyThatWasDown = obj.keyThatIsDown;
+						//obj.keyThatIsDown = "";
 					
 					}
 				}
