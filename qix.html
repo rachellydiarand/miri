@@ -17,6 +17,13 @@
 		var qixContext = qixCanvas.getContext("2d");
 		var gameRunning = false;
 		
+		// debug logger
+		function trace(str) {
+			//console.log(str);
+		}
+		function trace2(str) {
+			console.log(str);
+		}		
 		
 		// drawing methods
 		function clearCanvas(canvas, context, color) {
@@ -84,7 +91,7 @@
 					}
 				}
 								
-				console.log("collision detection x1: " + x1 + ", y1: " + y1);
+				trace("collision detection x1: " + x1 + ", y1: " + y1);
 				
 				var xInBounds = false;
 				var zeroRiseSensitivity = .5;
@@ -160,7 +167,7 @@
 				}	
 								
 				if(x1 == Infinity || x1 == -Infinity || y1 == Infinity || y1 == -Infinity || isNaN(x1) || isNaN(y1)){
-					console.log("infinity");
+					trace("infinity");
 					return false;
 					//return("Infinity");
 						
@@ -272,6 +279,7 @@
 				
 				// insert collision detection here
 				var hit = false;
+				var collision = false;// the last point that was a collision
 				for(var a = 0; a < obj.lines.length; a++) {
 					C = obj.lines[a].A;
 					D = obj.lines[a].B;
@@ -331,7 +339,8 @@
 					}
 					*/
 					// look for collisions
-					var collision = collisionDetection.isIntercepting(A, B, C, D)
+					collision = collisionDetection.isIntercepting(A, B, C, D);
+					
 					if(collision) {
 						// not going to allow this move for now
 						// we could make a partial move here
@@ -340,25 +349,70 @@
 						
 						// analyze the return object
 						// it stores the collision point							
-						console.log("collision detection returned a hit!");
-						console.log("Collision: " + collision.x + ", " + collision.y);
-						console.log("A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
-						console.log("C: " + C.x + ", " + C.y + ", D " + D.x + ", " + D.y);
+						trace("collision detection returned a hit!");
+						trace("Collision: " + collision.x + ", " + collision.y);
+						trace("A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
+						trace("C: " + C.x + ", " + C.y + ", D " + D.x + ", " + D.y);
 						
 						if(collision.x == A.x && collision.y == A.y)
 						{
 							// not a hit
-							console.log("hit ruled out, doing continue");
+							trace("hit ruled out, collision is the starting point");
+							continue;
+						}
+						if(collision.x == B.x && collision.y == B.y)
+						{
+							// the collision is the ending point
+							// that's fine, it's a collision
+							// but if we are all on the same plane
+							// we are colliding with ourselves
+							if(collision.x == A.x && collision.x == B.x && collision.x == C.x && collision.x == D.x) {
+								continue;
+							}
+							if(collision.y == A.y && collision.y == B.y && collision.y == C.y && collision.y == D.y) {
+								continue;
+							}
+						}
+						
+						if(collision.x == A.x && collision.x == B.x && collision.x == C.x && collision.x == D.x) {
+							continue;
+						}
+						if(collision.y == A.y && collision.y == B.y && collision.y == C.y && collision.y == D.y) {
+							continue;
+						}
+						// not sure
+						if(isNaN(collision.y))
+						{
+							// not a hit
+							trace("xxxxxxxxxx");
 							continue;
 						}
 						hit = true;
+						break;
 					}
 				}
 				
 				if(true && hit) {
 					// we collided with another line
-					console.log("We had a collision.  Skipping out of the move.")
+					trace("---------------------------");
+					trace("We had a collision.  Skipping out of the move.");
+					// not sure about this line yet
+					//obj.lastKeyThatWasDown = obj.keyThatIsDown;
+					trace("collision detection returned a hit!");
+					trace("Collision: " + collision.x + ", " + collision.y);
+					trace("A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
+					trace("C: " + C.x + ", " + C.y + ", D " + D.x + ", " + D.y);
+					
+					// if we are blocked with a collision
+					// and then switch direction on next move,
+					// we could be doing an illegal 180 turn
+					// try to fix it here:
+					obj.keyThatIsDown = "";
 					return;
+				}
+				else {
+					trace("No collision.  Doing the move....");
+					trace("A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
 				}
 				
 				var newLineObj = new Object();
@@ -434,8 +488,8 @@
 				var line;
 				
 				if(!obj.playing || obj.keyThatIsDown != "") {
-					obj.playing = true;
-					console.log("qix enter frame: " + obj.enterFrameCount);
+					obj.playing = true;// first frame
+					trace("qix enter frame: " + obj.enterFrameCount);
 					// refresh
 					clearCanvas(obj.canvas, obj.ctx);
 					
@@ -555,6 +609,8 @@
 			
 			obj.keyUp = function(key) {
 				//alert(key);
+				// problemo: two keys could be down at the same time
+				// these are the standard last key down is this key up
 				if(key == "arrowleft" || key == "keya") {
 					if(obj.keyThatIsDown == "left") {
 						obj.keyThatIsDown = "";
@@ -579,6 +635,8 @@
 						obj.lastKeyThatWasDown = "down";
 					}
 				}
+				
+				
 			}
 			
 			// return the game code object
