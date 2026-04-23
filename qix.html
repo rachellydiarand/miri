@@ -233,6 +233,10 @@
 			// stash the lines for collision detection
 			obj.lines = new Array();
 			
+			// any completed shapes will have an index in this array
+			// with all the lines in that shape
+			obj.shapes = new Array();
+			
 			// methods linking to external methods
 			obj.drawLine = function(ax, ay, bx, by, color) {
 				drawLine(ax, ay, bx, by, obj.ctx, color);
@@ -262,6 +266,7 @@
 			// cursor movements
 			obj.moveCursor = function (xp, yp) {
 				var onBorder = false;
+				var shapeWasCompleted = false;
 				var ax, ay, bx, by;
 				var A, B, C, D;
 				ax = obj.cursor.x;
@@ -314,10 +319,19 @@
 					}
 				}
 				
+				// determine if we are at the end of a draw (complete the draw by filling shape
+				// then adding shape to shape array)
+				if((B.x == obj.stage.padding || B.x == obj.stage.width - obj.stage.padding) ||
+					(B.y == obj.stage.padding || B.y == obj.stage.height - obj.stage.padding)) {
+					// we completed the shape by hitting the outside borders					
+					shapeWasCompleted = true;
+				}
+				
+				
 				// insert collision detection here
 				var collision = false;// the last point that was a collision
 				var hit = false;
-				if(!onBorder) {				
+				if(!onBorder && !shapeWasCompleted) {				
 					for(var a = 0; a < obj.lines.length; a++) {
 						C = obj.lines[a].A;
 						D = obj.lines[a].B;
@@ -469,6 +483,14 @@
 						// simply add on to the previous line
 						obj.lines[obj.lines.length - 1].B = newLineObj.B;
 					}	
+				}
+				
+				if(shapeWasCompleted) {
+					// add the lines to the shapes array now
+					obj.shapes.push(obj.lines);
+					obj.lines = new Array();
+					//alert(obj.shapes[0].length);
+					obj.slowdraw = false;
 				}
 				
 				obj.cursor.x = xp;
