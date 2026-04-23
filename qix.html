@@ -257,9 +257,11 @@
 			// key states (the keyboard moves the player)
 			obj.keyThatIsDown = "";
 			obj.lastKeyThatWasDown = "";// so that we can not got 180 degrees of last move
+			obj.slowdraw = false;
 			
 			// cursor movements
 			obj.moveCursor = function (xp, yp) {
+				var onBorder = false;
 				var ax, ay, bx, by;
 				var A, B, C, D;
 				ax = obj.cursor.x;
@@ -276,158 +278,198 @@
 				// determine move direction
 				var moveDirection = "horizontal";
 				if(A.x == B.x) moveDirection = "vertical";
-				
-				// insert collision detection here
-				var hit = false;
-				var collision = false;// the last point that was a collision
-				for(var a = 0; a < obj.lines.length; a++) {
-					C = obj.lines[a].A;
-					D = obj.lines[a].B;
-					
-					if(!collisionDetection.inRange(A, B, C, D)) {
-						continue;
-					}
-					
-					//alert(C.x + ", " + C.y + ", " + D.x + ", " + D.y);
-					/*
-					if(moveDirection == "horizontal") {
-						// horizontal
-						if(C.x != D.x) {
-							// we are moving in the same direction
-							// as the line we are testing against
-							// let's assign no hit for now
-							//alert("hit");
-						}
-						else {
-							if(C.y <= A.y && D.y > A.y)
-							{
-								hit = true;
-								break;
-							}
-							if(C.y >= A.y && D.y < A.y) {
-								hit = true;
-								break;
-							}
-						}
+								
+				// Q: Are we on the borders?
+				// Q: Is the slowdraw or fastdraw key down?
+				if(moveDirection == "horizontal")
+				{
+					if(A.y == obj.stage.padding || (A.y == obj.stage.height - obj.stage.padding)) {
+						// on the top or bottom border
+						onBorder = true;
+						// don't need draw key on here
+						// Q: Were we moving?
+						// if so, we need to stop/end the move
 					}
 					else {
-						// vertical
-						
-						if(C.x == D.x) {
-							// we are moving in the same direction
-							// as the line we are testing against
-							// let's assign no hit for now
-						}
-						else {
-							if(C.x <= A.x && D.x > A.x) {
-								hit = true;
-								break;
-							}
-							if(C.x < A.x && D.x >= A.x) {
-								hit = true;
-								break;
-							}
-							if(C.x >= A.x && D.x < A.x) {
-								hit = true;
-								break;
-							}
-							if(C.x > A.x && D.x <= A.x) {
-								hit = true;
-								break;
-							}
+						if(obj.slowdraw == false) {
+							// we are not drawing
+							return;
 						}
 					}
-					*/
-					// look for collisions
-					collision = collisionDetection.isIntercepting(A, B, C, D);
-					
-					if(collision) {
-						// not going to allow this move for now
-						// we could make a partial move here
-						// just exit function for now
-						//return;
+				}
+				else {
+					// vertical
+					if(A.x == obj.stage.padding || (A.x == obj.stage.width - obj.stage.padding)) {
+						// on the left or right border
+						onBorder = true;
+						// don't need draw key on here
+						// Q: Were we moving?
+						// if so, we need to stop/end the move
+					}
+					else {
+						if(obj.slowdraw == false) {
+							// we are not drawing
+							return;
+						}
+					}
+				}
+				
+				// insert collision detection here
+				var collision = false;// the last point that was a collision
+				var hit = false;
+				if(!onBorder) {				
+					for(var a = 0; a < obj.lines.length; a++) {
+						C = obj.lines[a].A;
+						D = obj.lines[a].B;
 						
-						// analyze the return object
-						// it stores the collision point							
-						trace("collision detection returned a hit!");
-						trace("Collision: " + collision.x + ", " + collision.y);
-						trace("A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
-						trace("C: " + C.x + ", " + C.y + ", D " + D.x + ", " + D.y);
-						
-						if(collision.x == A.x && collision.y == A.y)
-						{
-							// not a hit
-							trace("hit ruled out, collision is the starting point");
+						if(!collisionDetection.inRange(A, B, C, D)) {
 							continue;
 						}
-						if(collision.x == B.x && collision.y == B.y)
-						{
-							// the collision is the ending point
-							// that's fine, it's a collision
-							// but if we are all on the same plane
-							// we are colliding with ourselves
+						
+						//alert(C.x + ", " + C.y + ", " + D.x + ", " + D.y);
+						/*
+						if(moveDirection == "horizontal") {
+							// horizontal
+							if(C.x != D.x) {
+								// we are moving in the same direction
+								// as the line we are testing against
+								// let's assign no hit for now
+								//alert("hit");
+							}
+							else {
+								if(C.y <= A.y && D.y > A.y)
+								{
+									hit = true;
+									break;
+								}
+								if(C.y >= A.y && D.y < A.y) {
+									hit = true;
+									break;
+								}
+							}
+						}
+						else {
+							// vertical
+							
+							if(C.x == D.x) {
+								// we are moving in the same direction
+								// as the line we are testing against
+								// let's assign no hit for now
+							}
+							else {
+								if(C.x <= A.x && D.x > A.x) {
+									hit = true;
+									break;
+								}
+								if(C.x < A.x && D.x >= A.x) {
+									hit = true;
+									break;
+								}
+								if(C.x >= A.x && D.x < A.x) {
+									hit = true;
+									break;
+								}
+								if(C.x > A.x && D.x <= A.x) {
+									hit = true;
+									break;
+								}
+							}
+						}
+						*/
+											
+						// look for collisions
+						collision = collisionDetection.isIntercepting(A, B, C, D);
+						
+						if(collision) {
+							// not going to allow this move for now
+							// we could make a partial move here
+							// just exit function for now
+							//return;
+							
+							// analyze the return object
+							// it stores the collision point							
+							trace("collision detection returned a hit!");
+							trace("Collision: " + collision.x + ", " + collision.y);
+							trace("A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
+							trace("C: " + C.x + ", " + C.y + ", D " + D.x + ", " + D.y);
+							
+							if(collision.x == A.x && collision.y == A.y)
+							{
+								// not a hit
+								trace("hit ruled out, collision is the starting point");
+								continue;
+							}
+							if(collision.x == B.x && collision.y == B.y)
+							{
+								// the collision is the ending point
+								// that's fine, it's a collision
+								// but if we are all on the same plane
+								// we are colliding with ourselves
+								if(collision.x == A.x && collision.x == B.x && collision.x == C.x && collision.x == D.x) {
+									continue;
+								}
+								if(collision.y == A.y && collision.y == B.y && collision.y == C.y && collision.y == D.y) {
+									continue;
+								}
+							}
+							
 							if(collision.x == A.x && collision.x == B.x && collision.x == C.x && collision.x == D.x) {
 								continue;
 							}
 							if(collision.y == A.y && collision.y == B.y && collision.y == C.y && collision.y == D.y) {
 								continue;
 							}
+							// not sure
+							if(isNaN(collision.y))
+							{
+								// not a hit
+								trace("xxxxxxxxxx");
+								continue;
+							}
+							hit = true;
+							break;
 						}
-						
-						if(collision.x == A.x && collision.x == B.x && collision.x == C.x && collision.x == D.x) {
-							continue;
-						}
-						if(collision.y == A.y && collision.y == B.y && collision.y == C.y && collision.y == D.y) {
-							continue;
-						}
-						// not sure
-						if(isNaN(collision.y))
-						{
-							// not a hit
-							trace("xxxxxxxxxx");
-							continue;
-						}
-						hit = true;
-						break;
 					}
-				}
-				
-				if(true && hit) {
-					// we collided with another line
-					trace("---------------------------");
-					trace("We had a collision.  Skipping out of the move.");
-					// not sure about this line yet
-					//obj.lastKeyThatWasDown = obj.keyThatIsDown;
-					trace("collision detection returned a hit!");
-					trace("Collision: " + collision.x + ", " + collision.y);
-					trace("A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
-					trace("C: " + C.x + ", " + C.y + ", D " + D.x + ", " + D.y);
 					
-					// if we are blocked with a collision
-					// and then switch direction on next move,
-					// we could be doing an illegal 180 turn
-					// try to fix it here:
-					obj.keyThatIsDown = "";
-					return;
-				}
-				else {
-					trace("No collision.  Doing the move....");
-					trace("A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
+					if(true && hit) {
+						// we collided with another line
+						trace("---------------------------");
+						trace("We had a collision.  Skipping out of the move.");
+						// not sure about this line yet
+						//obj.lastKeyThatWasDown = obj.keyThatIsDown;
+						trace("collision detection returned a hit!");
+						trace("Collision: " + collision.x + ", " + collision.y);
+						trace("A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
+						trace("C: " + C.x + ", " + C.y + ", D " + D.x + ", " + D.y);
+						
+						// if we are blocked with a collision
+						// and then switch direction on next move,
+						// we could be doing an illegal 180 turn
+						// try to fix it here:
+						obj.keyThatIsDown = "";
+						return;
+					}
+					else {
+						trace("No collision.  Doing the move....");
+						trace("A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
+					}
 				}
 				
 				var newLineObj = new Object();
 				newLineObj.A = A;
 				newLineObj.B = B;
 				
-				if(obj.lines.length == 0 || obj.keyThatIsDown != obj.lastKeyThatWasDown) {
-					// we changed direction
-					obj.lines.push(newLineObj);
+				if(!onBorder) {
+					if(obj.lines.length == 0 || obj.keyThatIsDown != obj.lastKeyThatWasDown) {
+						// we changed direction
+						obj.lines.push(newLineObj);
+					}
+					else {
+						// we did not change direction
+						// simply add on to the previous line
+						obj.lines[obj.lines.length - 1].B = newLineObj.B;
+					}	
 				}
-				else {
-					// we did not change direction
-					// simply add on to the previous line
-					obj.lines[obj.lines.length - 1].B = newLineObj.B;
-				}				
 				
 				obj.cursor.x = xp;
 				obj.cursor.y = yp;
@@ -562,6 +604,12 @@
 			
 			obj.keyDown = function(key) {
 				//alert(key);
+				// always track if controlleft is down
+				// can't draw without it
+				// but we can move along the perimeter
+				// the perimeter includes objects that are already drawn
+				// and on the outside (not interior lines)
+				if(key == "controlleft") obj.slowdraw = true;
 				if(key == "arrowleft" || key == "keya") {
 					if(obj.isValidMove("left")) {
 						obj.keyThatIsDown = "left";
@@ -611,6 +659,7 @@
 				//alert(key);
 				// problemo: two keys could be down at the same time
 				// these are the standard last key down is this key up
+				if(key == "controlleft") obj.slowdraw = false;
 				if(key == "arrowleft" || key == "keya") {
 					if(obj.keyThatIsDown == "left") {
 						obj.keyThatIsDown = "";
