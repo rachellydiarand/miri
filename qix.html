@@ -18,12 +18,15 @@
 		var gameRunning = false;
 		
 		// debug logger
-		function trace(str) {
-			//console.log(str);
+		function trace(output, str) {
+			if(output == "console") {
+				console.log(str);
+			}
+			else if(output == "alert") {
+				alert(str);
+			}
 		}
-		function trace2(str) {
-			console.log(str);
-		}		
+			
 		
 		// drawing methods
 		function clearCanvas(canvas, context, color) {
@@ -39,6 +42,28 @@
 			context.moveTo(ax, ay);
 			context.lineTo(bx, by);
 			context.stroke();
+		}
+		
+		function drawFilledPolygon(lines, ctx, lineColor, fillColor) {
+			//alert(lines.length);
+			ctx.fillStyle = fillColor;
+			ctx.strokeStyle = lineColor;
+			ctx.beginPath();
+			for(var c = 0; c < lines.length; c++) {
+				line = lines[c];
+				if(c == 0) {
+					ctx.moveTo(line.A.x, line.A.y);
+					ctx.lineTo(line.B.x, line.B.y);
+					continue;
+				}
+				ctx.lineTo(line.B.x, line.B.y);				
+				//obj.drawLine(line.A.x, line.A.y, line.A.x + 1, line.A.y - 1, obj.cursor.intersectionStyle);
+			}
+			// draw the line that connects to the first line
+			ctx.lineTo(lines[0].A.x, lines[0].A.y);
+			ctx.stroke();
+			ctx.closePath();
+			ctx.fill();
 		}
 		
 		// game logic
@@ -91,7 +116,7 @@
 					}
 				}
 								
-				trace("collision detection x1: " + x1 + ", y1: " + y1);
+				trace("console", "collision detection x1: " + x1 + ", y1: " + y1);
 				
 				var xInBounds = false;
 				var zeroRiseSensitivity = .5;
@@ -160,14 +185,14 @@
 				}
 				if(C.y > D.y - zeroRiseSensitivity && C.y < D.y + zeroRiseSensitivity){
 					//count++
-					//trace("c = d",count);
+					//trace("console", "c = d",count);
 					if(y1 > C.y - zeroRiseSensitivity && y1 < C.y + zeroRiseSensitivity){
 						yInBounds2 = true;
 					}
 				}	
 								
 				if(x1 == Infinity || x1 == -Infinity || y1 == Infinity || y1 == -Infinity || isNaN(x1) || isNaN(y1)){
-					trace("infinity");
+					trace("console", "infinity");
 					return false;
 					//return("Infinity");
 						
@@ -175,7 +200,7 @@
 				
 				if(xInBounds && yInBounds && xInBounds2 && yInBounds2){
 					returnObj.count++;
-					//trace("inbounds ",count);
+					//trace("console", "inbounds ",count);
 					var obj = new Object();
 					obj.x = x1;
 					obj.y = y1;
@@ -263,7 +288,7 @@
 			obj.lastKeyThatWasDown = "";// so that we can not got 180 degrees of last move
 			obj.slowdraw = false;
 			
-			// cursor movements
+			// cursor movements : obj.moveCursor is where the collision detection logic is
 			obj.moveCursor = function (xp, yp) {
 				var onBorder = false;
 				var shapeWasCompleted = false;
@@ -319,10 +344,11 @@
 					}
 				}
 				
+				// Did we complete a shape?
 				// determine if we are at the end of a draw (complete the draw by filling shape
 				// then adding shape to shape array)
-				if((B.x == obj.stage.padding || B.x == obj.stage.width - obj.stage.padding) ||
-					(B.y == obj.stage.padding || B.y == obj.stage.height - obj.stage.padding)) {
+				if(!onBorder && ((B.x == obj.stage.padding || B.x == obj.stage.width - obj.stage.padding) ||
+					(B.y == obj.stage.padding || B.y == obj.stage.height - obj.stage.padding))) {
 					// we completed the shape by hitting the outside borders					
 					shapeWasCompleted = true;
 				}
@@ -340,57 +366,6 @@
 							continue;
 						}
 						
-						//alert(C.x + ", " + C.y + ", " + D.x + ", " + D.y);
-						/*
-						if(moveDirection == "horizontal") {
-							// horizontal
-							if(C.x != D.x) {
-								// we are moving in the same direction
-								// as the line we are testing against
-								// let's assign no hit for now
-								//alert("hit");
-							}
-							else {
-								if(C.y <= A.y && D.y > A.y)
-								{
-									hit = true;
-									break;
-								}
-								if(C.y >= A.y && D.y < A.y) {
-									hit = true;
-									break;
-								}
-							}
-						}
-						else {
-							// vertical
-							
-							if(C.x == D.x) {
-								// we are moving in the same direction
-								// as the line we are testing against
-								// let's assign no hit for now
-							}
-							else {
-								if(C.x <= A.x && D.x > A.x) {
-									hit = true;
-									break;
-								}
-								if(C.x < A.x && D.x >= A.x) {
-									hit = true;
-									break;
-								}
-								if(C.x >= A.x && D.x < A.x) {
-									hit = true;
-									break;
-								}
-								if(C.x > A.x && D.x <= A.x) {
-									hit = true;
-									break;
-								}
-							}
-						}
-						*/
-											
 						// look for collisions
 						collision = collisionDetection.isIntercepting(A, B, C, D);
 						
@@ -402,15 +377,15 @@
 							
 							// analyze the return object
 							// it stores the collision point							
-							trace("collision detection returned a hit!");
-							trace("Collision: " + collision.x + ", " + collision.y);
-							trace("A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
-							trace("C: " + C.x + ", " + C.y + ", D " + D.x + ", " + D.y);
+							trace("console", "collision detection returned a hit!");
+							trace("console", "Collision: " + collision.x + ", " + collision.y);
+							trace("console", "A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
+							trace("console", "C: " + C.x + ", " + C.y + ", D " + D.x + ", " + D.y);
 							
 							if(collision.x == A.x && collision.y == A.y)
 							{
 								// not a hit
-								trace("hit ruled out, collision is the starting point");
+								trace("console", "hit ruled out, collision is the starting point");
 								continue;
 							}
 							if(collision.x == B.x && collision.y == B.y)
@@ -437,7 +412,7 @@
 							if(isNaN(collision.y))
 							{
 								// not a hit
-								trace("xxxxxxxxxx");
+								trace("console", "xxxxxxxxxx");
 								continue;
 							}
 							hit = true;
@@ -447,14 +422,14 @@
 					
 					if(true && hit) {
 						// we collided with another line
-						trace("---------------------------");
-						trace("We had a collision.  Skipping out of the move.");
+						trace("console", "---------------------------");
+						trace("console", "We had a collision.  Skipping out of the move.");
 						// not sure about this line yet
 						//obj.lastKeyThatWasDown = obj.keyThatIsDown;
-						trace("collision detection returned a hit!");
-						trace("Collision: " + collision.x + ", " + collision.y);
-						trace("A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
-						trace("C: " + C.x + ", " + C.y + ", D " + D.x + ", " + D.y);
+						trace("console", "collision detection returned a hit!");
+						trace("console", "Collision: " + collision.x + ", " + collision.y);
+						trace("console", "A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
+						trace("console", "C: " + C.x + ", " + C.y + ", D " + D.x + ", " + D.y);
 						
 						// if we are blocked with a collision
 						// and then switch direction on next move,
@@ -464,8 +439,8 @@
 						return;
 					}
 					else {
-						trace("No collision.  Doing the move....");
-						trace("A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
+						trace("console", "No collision.  Doing the move....");
+						trace("console", "A: " + A.x + ", " + A.y + ", B: " + B.x + ", " + B.y);
 					}
 				}
 				
@@ -485,17 +460,24 @@
 					}	
 				}
 				
+				// handle the completed shapes this frame
 				if(shapeWasCompleted) {
 					// add the lines to the shapes array now
-					obj.shapes.push(obj.lines);
+					obj.shapes.push(obj.mutateShape(obj.lines));
 					obj.lines = new Array();
-					//alert(obj.shapes[0].length);
 					obj.slowdraw = false;
 				}
 				
 				obj.cursor.x = xp;
 				obj.cursor.y = yp;
 				obj.lastKeyThatWasDown = obj.keyThatIsDown;
+				
+				// finish handling completed shapes this frame
+				if(shapeWasCompleted) {
+					//obj.keyThatIsDown = "";
+					shapeWasCompleted = false;
+					trace("console", "shapeWasCompleted, current length of line array = " + obj.lines.length);
+				}
 			}
 			obj.moveLeft = function() {
 				var xp = obj.cursor.x - obj.cursor.speed;
@@ -526,9 +508,294 @@
 				obj.moveCursor(obj.cursor.x, yp);
 			};
 			
+			obj.mutateShape = function(shape) {
+				// !!!!!! important ! ** changed this function name from drawShape to mutateShape
+				// we need to modify these shapes
+				// to account for things like the stage corners
+				// BEFORE we do the enterframe draw on the shapes
+				trace("console", "obj.drawShape");
+				trace("console", JSON.stringify(shape));
+				var a, b;
+				var line, line2, line3;
+				// do some cleanup on the shape array
+				// it is an array of lines [ { A, B }, { A, B } ]
+				// we don't want to draw diagonals!
+				// if we started on one border and ended on another border
+				var shapeArr = new Array();
+				if(shape[0].A.x == obj.stage.padding && shape[shape.length - 1].B.x == obj.stage.width - obj.stage.padding) {
+					// we started on the left and ended on the right
+					// so we'll need to add two corners,
+					// but which two?  Compute area?
+					// NO!  It's actually supposed to be so we form
+					// the shape on the side that the QIX is NOT on!
+					
+					for(var a = 0; a < shape.length; a++) {
+						shapeArr.push(shape[a]);
+					}
+						
+					// let's just make an arbitrary choice now!
+					var rand = Math.round(Math.random());
+					if(rand == 0) {
+						// lower two corners
+						trace("console", "shape left to right, using lower two corners");
+						// have to start on the last line/point
+						// and make our way back to the start
+						line = new Object();
+						line.A = new Object();
+						line.A.x = shape[shape.length - 1].B.x;
+						line.A.y = shape[shape.length - 1].B.y;
+						line.B = new Object();
+						line.B.x = line.A.x;
+						line.B.y = obj.stage.height - obj.stage.padding;
+						shapeArr.push(line);
+						line2 = new Object();
+						line2.A = new Object();
+						line2.A.x = line.B.x;
+						line2.A.y = line.B.y;
+						line2.B = new Object();
+						line2.B.x = obj.stage.padding;
+						line2.B.y = obj.stage.height - obj.stage.padding;
+						shapeArr.push(line2);
+						line3 = new Object();
+						line3.A = new Object();
+						line3.A.x = line2.B.x;
+						line3.A.y = line2.B.y;
+						line3.B = new Object();
+						line3.B.x = shape[0].A.x
+						line3.B.y = shape[0].A.y;
+						shapeArr.push(line3);
+					}
+					else {
+						// upper two corners
+						trace("console", "shape left to right, using upper two corners");
+						// have to start on the last line/point
+						// and make our way back to the start
+						line = new Object();
+						line.A = new Object();
+						line.A.x = shape[shape.length - 1].B.x;
+						line.A.y = shape[shape.length - 1].B.y;
+						line.B = new Object();
+						line.B.x = line.A.x;
+						line.B.y = obj.stage.padding;
+						shapeArr.push(line);
+						line2 = new Object();
+						line2.A = new Object();
+						line2.A.x = line.B.x;
+						line2.A.y = line.B.y;
+						line2.B = new Object();
+						line2.B.x = obj.stage.padding;
+						line2.B.y = obj.stage.padding;
+						shapeArr.push(line2);
+						line3 = new Object();
+						line3.A = new Object();
+						line3.A.x = line2.B.x;
+						line3.A.y = line2.B.y;
+						line3.B = new Object();
+						line3.B.x = shape[0].A.x
+						line3.B.y = shape[0].A.y;
+						shapeArr.push(line3);
+					}
+					shape = shapeArr;
+				}
+				else if(shape[0].A.x == obj.stage.width - obj.stage.padding && shape[shape.length - 1].B.x == obj.stage.padding) {
+					// we started on the right and ended on the left
+					// so we'll need to add two corners,
+					// but which two?  Compute area?
+					// NO!  It's actually supposed to be so we form
+					// the shape on the side that the QIX is NOT on!
+					
+					for(var a = 0; a < shape.length; a++) {
+						shapeArr.push(shape[a]);
+					}
+						
+					// let's just make an arbitrary choice now!
+					var rand = Math.round(Math.random());
+					if(rand == 0) {
+						// lower two corners
+						trace("console", "shape right to left, using lower two corners");
+						// have to start on the last line/point
+						// and make our way back to the start
+						line = new Object();
+						line.A = new Object();
+						line.A.x = shape[shape.length - 1].B.x;
+						line.A.y = shape[shape.length - 1].B.y;
+						line.B = new Object();
+						line.B.x = line.A.x;
+						line.B.y = obj.stage.height - obj.stage.padding;
+						shapeArr.push(line);
+						line2 = new Object();
+						line2.A = new Object();
+						line2.A.x = line.B.x;
+						line2.A.y = line.B.y;
+						line2.B = new Object();
+						line2.B.x = obj.stage.width - obj.stage.padding;
+						line2.B.y = obj.stage.height - obj.stage.padding;
+						shapeArr.push(line2);
+						line3 = new Object();
+						line3.A = new Object();
+						line3.A.x = line2.B.x;
+						line3.A.y = line2.B.y;
+						line3.B = new Object();
+						line3.B.x = shape[0].A.x
+						line3.B.y = shape[0].A.y;
+						shapeArr.push(line3);
+					}
+					else {
+						// upper two corners
+						trace("console", "shape right to left, using upper two corners");
+						// have to start on the last line/point
+						// and make our way back to the start
+						line = new Object();
+						line.A = new Object();
+						line.A.x = shape[shape.length - 1].B.x;
+						line.A.y = shape[shape.length - 1].B.y;
+						line.B = new Object();
+						line.B.x = line.A.x;
+						line.B.y = obj.stage.padding;
+						shapeArr.push(line);
+						line2 = new Object();
+						line2.A = new Object();
+						line2.A.x = line.B.x;
+						line2.A.y = line.B.y;
+						line2.B = new Object();
+						line2.B.x = obj.stage.width - obj.stage.padding;
+						line2.B.y = obj.stage.padding;
+						shapeArr.push(line2);
+						line3 = new Object();
+						line3.A = new Object();
+						line3.A.x = line2.B.x;
+						line3.A.y = line2.B.y;
+						line3.B = new Object();
+						line3.B.x = shape[0].A.x
+						line3.B.y = shape[0].A.y;
+						shapeArr.push(line3);
+					}
+					shape = shapeArr;
+				}
+				else if(shape[0].A.x == obj.stage.padding && shape[shape.length - 1].B.x != obj.stage.padding) {
+					// first point was on the left border
+					// last point was not on the left border
+					if(shape[0].A.y < shape[shape.length - 1].B.y) {
+						// we need to include the bottom left corner in this shape
+						for(var a = 0; a < shape.length; a++) {
+							shapeArr.push(shape[a]);
+						}
+						// have to start on the last line/point
+						// and make our way back to the start
+						line = new Object();
+						line.A = new Object();
+						line.A.x = shape[shape.length - 1].B.x;
+						line.A.y = shape[shape.length - 1].B.y;
+						line.B = new Object();
+						line.B.x = obj.stage.padding;
+						line.B.y = obj.stage.height - obj.stage.padding;
+						shapeArr.push(line);
+						line2 = new Object();
+						line2.A = new Object();
+						line2.A.x = line.B.x;
+						line2.A.y = line.B.y;
+						line2.B = new Object();
+						line2.B.x = shape[0].A.x
+						line2.B.y = shape[0].A.y;
+						shapeArr.push(line2);
+						
+						shape = shapeArr;
+						trace("console", "new shapeArr = " + JSON.stringify(shape));
+					}
+					else if(shape[0].A.y > shape[shape.length - 1].B.y) {
+						// we need to include the top left corner in this shape
+						for(var a = 0; a < shape.length; a++) {
+							shapeArr.push(shape[a]);
+						}
+						// have to start on the last line/point
+						// and make our way back to the start
+						line = new Object();
+						line.A = new Object();
+						line.A.x = shape[shape.length - 1].B.x;
+						line.A.y = shape[shape.length - 1].B.y;
+						line.B = new Object();
+						line.B.x = obj.stage.padding;
+						line.B.y = obj.stage.padding;
+						shapeArr.push(line);
+						line2 = new Object();
+						line2.A = new Object();
+						line2.A.x = line.B.x;
+						line2.A.y = line.B.y;
+						line2.B = new Object();
+						line2.B.x = shape[0].A.x
+						line2.B.y = shape[0].A.y;
+						shapeArr.push(line2);
+						
+						shape = shapeArr;
+						trace("console", "new shapeArr = " + JSON.stringify(shape));
+					}					
+				}
+				else if(shape[0].A.x < obj.stage.width - obj.stage.padding && shape[shape.length - 1].B.x == obj.stage.width - obj.stage.padding) {
+					// first point was not on the right border
+					// last point was on the right border
+					if(shape[0].A.y < shape[shape.length - 1].B.y) {
+						// we need to include the top left corner in this shape
+						for(var a = 0; a < shape.length; a++) {
+							shapeArr.push(shape[a]);
+						}
+						// have to start on the last line/point
+						// and make our way back to the start
+						line = new Object();
+						line.A = new Object();
+						line.A.x = shape[shape.length - 1].B.x;
+						line.A.y = shape[shape.length - 1].B.y;
+						line.B = new Object();
+						line.B.x = obj.stage.width - obj.stage.padding;
+						line.B.y = obj.stage.padding;
+						shapeArr.push(line);
+						line2 = new Object();
+						line2.A = new Object();
+						line2.A.x = line.B.x;
+						line2.A.y = line.B.y;
+						line2.B = new Object();
+						line2.B.x = shape[0].A.x
+						line2.B.y = shape[0].A.y;
+						shapeArr.push(line2);
+						
+						shape = shapeArr;
+						trace("console", "new shapeArr = " + JSON.stringify(shape));
+					}
+					else if(shape[0].A.y > shape[shape.length - 1].B.y) {
+						// we need to include the bottom left corner in this shape
+						for(var a = 0; a < shape.length; a++) {
+							shapeArr.push(shape[a]);
+						}
+						// have to start on the last line/point
+						// and make our way back to the start
+						line = new Object();
+						line.A = new Object();
+						line.A.x = shape[shape.length - 1].B.x;
+						line.A.y = shape[shape.length - 1].B.y;
+						line.B = new Object();
+						line.B.x = obj.stage.width - obj.stage.padding;
+						line.B.y = obj.stage.height - obj.stage.padding;
+						shapeArr.push(line);
+						line2 = new Object();
+						line2.A = new Object();
+						line2.A.x = line.B.x;
+						line2.A.y = line.B.y;
+						line2.B = new Object();
+						line2.B.x = shape[0].A.x
+						line2.B.y = shape[0].A.y;
+						shapeArr.push(line2);
+						
+						shape = shapeArr;
+						trace("console", "new shapeArr = " + JSON.stringify(shape));
+					}					
+				}
+						
+				//drawFilledPolygon(shape, obj.ctx, obj.cursor.style, "lightgreen");
+				return shape;// shape was mutated if needed
+			}
 			
 			obj.enterFrameCount = 0;
 			
+			// obj.EnterFrame is where all the drawing logic is
 			obj.EnterFrame = function() {
 				// throw away variables
 				obj.enterFrameCount++;
@@ -553,7 +820,7 @@
 				
 				if(!obj.playing || obj.keyThatIsDown != "") {
 					obj.playing = true;// first frame
-					trace("qix enter frame: " + obj.enterFrameCount);
+					trace("console", "qix enter frame: " + obj.enterFrameCount);
 					// refresh
 					clearCanvas(obj.canvas, obj.ctx);
 					
@@ -587,8 +854,14 @@
 						obj.drawLine(line.A.x, line.A.y, line.B.x, line.B.y, obj.cursor.style);
 						obj.drawLine(line.A.x, line.A.y, line.A.x + 1, line.A.y - 1, obj.cursor.intersectionStyle);
 					}
-				}
-				
+					
+					// draw shapes!
+					trace("console", "obj.shapes length = " + obj.shapes.length);
+					for(var b = 0; b < obj.shapes.length; b++) {
+						var shape = obj.shapes[b];
+						drawFilledPolygon(shape, obj.ctx, obj.cursor.style, "lightgreen");
+					}
+				}				
 			}
 			
 			obj.start = function() {
